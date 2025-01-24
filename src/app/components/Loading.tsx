@@ -4,7 +4,7 @@ import { RootState } from "../../utils/store.ts";
 const Loading = () => {
     const loading = useSelector((state: RootState) => state.app.loading);
 
-    if (loading) return null;
+    if (!loading) return null;
 
     return (
         <div className="flex items-center justify-center h-screen bg-black/50 fixed inset-0 z-50 backdrop-blur-xs">
