@@ -4,6 +4,8 @@ import {RootState} from "../utils/store.ts";
 import {useAccount} from "../hooks/useAccount.ts";
 import NotSupported from "./pages/NotSupported.tsx";
 import {DeviceSize} from "../slices/deviceSlice.ts";
+import ErrorMessage from "./components/ErrorMessage.tsx";
+import Message from "./components/Message.tsx";
 
 function App() {
     useDevice();
@@ -28,6 +30,9 @@ function App() {
             <h1>error: {error}</h1>
             <h1>message: {message}</h1>
             <h1>authorized: {authorized.toString()}</h1>
+
+            <ErrorMessage/>
+            <Message/>
         </>
     )
 }
