@@ -2,6 +2,8 @@ import useDevice from "../hooks/useDevice.ts";
 import {useSelector} from "react-redux";
 import {RootState} from "../utils/store.ts";
 import {useAccount} from "../hooks/useAccount.ts";
+import NotSupported from "./pages/NotSupported.tsx";
+import {DeviceSize} from "../slices/deviceSlice.ts";
 
 function App() {
     useDevice();
@@ -13,6 +15,10 @@ function App() {
     const error = useSelector((state: RootState) => state.app.error);
     const message = useSelector((state: RootState) => state.app.message);
     const authorized = useSelector((state: RootState) => state.account.authorized);
+
+    if (deviceSize === DeviceSize.Small) {
+        return <NotSupported />;
+    }
 
     return (
         <>
