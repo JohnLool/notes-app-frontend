@@ -10,6 +10,7 @@ import axios from "axios";
 import {setAccountAuthorized} from "../slices/accountSlice.ts";
 import ErrorMessage from "./components/ErrorMessage.tsx";
 import Message from "./components/Message.tsx";
+import Loading from "./components/Loading.tsx";
 
 function App() {
     const dispatch: AppDispatch = useDispatch();
@@ -53,6 +54,8 @@ function App() {
 
             <ErrorMessage/>
             <Message/>
+
+            <Loading/>
         </>
     )
 }
