@@ -1,35 +1,47 @@
 import useDevice from "../hooks/useDevice.ts";
-import {useDispatch, useSelector} from "react-redux";
-import {AppDispatch, RootState} from "../utils/store.ts";
+import {useSelector} from "react-redux";
+import {RootState} from "../utils/store.ts";
 import {useAccount} from "../hooks/useAccount.ts";
 import NotSupported from "./pages/NotSupported.tsx";
 import {DeviceSize} from "../slices/deviceSlice.ts";
 import AuthorizationPage from "./pages/AuthorizationPage.tsx";
-import Cookies from "js-cookie";
-import axios from "axios";
-import {setAccountAuthorized} from "../slices/accountSlice.ts";
 import ErrorMessage from "./components/ErrorMessage.tsx";
 import Message from "./components/Message.tsx";
 import Loading from "./components/Loading.tsx";
+import { ReactNode } from "react";
+import {createBrowserRouter, Navigate, RouterProvider} from "react-router-dom";
+import PageNotes from "./pages/PageNotes.tsx";
+import PageUsers from "./pages/PageUsers.tsx";
+import PageMe from "./pages/PageMe.tsx";
+import Page from "./pages/Page.tsx";
+
+export interface RoutePageInterface {
+    path: string;
+    element: ReactNode;
+    title: string;
+}
+
+export const routePages: RoutePageInterface[] = [
+    {path: '/notes', element: <Page element={<PageNotes/>}/>, title: "Notes"},
+    {path: '/users', element: <Page element={<PageUsers/>}/>, title: "Users"},
+    {path: '/me', element: <Page element={<PageMe/>}/>, title: "Me"},
+];
+
+const router = createBrowserRouter([
+    {path: "*", element: <Navigate to="/notes"/>},
+    ...routePages.map(page => ({
+        path: page.path,
+        element: page.element
+    }))
+]);
+
 
 function App() {
-    const dispatch: AppDispatch = useDispatch();
-
     useDevice();
     useAccount();
 
     const deviceSize = useSelector((state: RootState) => state.device.size);
-    const deviceIsMobile = useSelector((state: RootState) => state.device.isMobile);
-    const loading = useSelector((state: RootState) => state.app.loading);
-    const error = useSelector((state: RootState) => state.app.error);
-    const message = useSelector((state: RootState) => state.app.message);
     const authorized = useSelector((state: RootState) => state.account.authorized);
-
-    const clear = () => {
-        Cookies.remove('token');
-        delete axios.defaults.headers.common['Authorization'];
-        dispatch(setAccountAuthorized(false));
-    }
 
     if (deviceSize === DeviceSize.Small) {
         return <NotSupported/>;
@@ -37,20 +49,7 @@ function App() {
 
     return (
         <>
-            <h1>deviceSize: {deviceSize}</h1>
-            <h1>deviceIsMobile: {deviceIsMobile.toString()}</h1>
-            <h1>loading: {loading.toString()}</h1>
-            <h1>error: {error}</h1>
-            <h1>message: {message}</h1>
-            <h1>authorized: {authorized.toString()}</h1>
-            <button
-                className="btn btn-primary bg-red-500 px-6 py-2"
-                onClick={clear}
-            >
-                logout
-            </button>
-
-            {!authorized && <AuthorizationPage/>}
+            {!authorized ? <AuthorizationPage/> : <RouterProvider router={router}/>}
 
             <ErrorMessage/>
             <Message/>
