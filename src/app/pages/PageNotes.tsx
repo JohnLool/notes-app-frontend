@@ -1,9 +1,9 @@
 import React, {useEffect, useReducer} from "react";
-import axios from "axios";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
 import Dialog from "../components/Dialog.tsx";
+import {api} from "../../utils/api.ts";
 
 export interface Note {
     id: number;
@@ -86,7 +86,7 @@ const PageNotes: React.FC = () => {
     const getNotes = async () => {
         dispatch(setAppLoading(true));
         try {
-            const notesResponse = await axios.get(import.meta.env.VITE_BASE_URL + "/notes", {
+            const notesResponse = await api.get("/notes", {
                 params: {owner: 'me'},
             });
             localDispatch({type: "SET_NOTES", payload: notesResponse.data});
@@ -112,13 +112,13 @@ const PageNotes: React.FC = () => {
     const createNote = async () => {
         dispatch(setAppLoading(true));
         try {
-            const response = await axios.post(import.meta.env.VITE_BASE_URL + "/notes", {
+            const response = await api.post("/notes", {
                 title: state.currentNote.title,
                 description: state.currentNote.description,
             });
             localDispatch({type: "ADD_NOTE", payload: response.data});
-        } catch (error) {
-            dispatch(setAppError(error as any));
+        } catch (error: any) {
+            dispatch(setAppError(error.message));
         } finally {
             dispatch(setAppLoading(false));
         }
@@ -127,13 +127,13 @@ const PageNotes: React.FC = () => {
     const editNote = async () => {
         dispatch(setAppLoading(true));
         try {
-            const response = await axios.put(import.meta.env.VITE_BASE_URL + `/notes/${state.currentNote.id}`, {
+            const response = await api.put(`/notes/${state.currentNote.id}`, {
                 title: state.currentNote.title,
                 description: state.currentNote.description,
             });
             localDispatch({type: "EDIT_NOTE", payload: response.data});
-        } catch (error) {
-            dispatch(setAppError(error as any));
+        } catch (error: any) {
+            dispatch(setAppError(error.message));
         } finally {
             dispatch(setAppLoading(false));
         }
@@ -142,10 +142,10 @@ const PageNotes: React.FC = () => {
     const deleteNote = async () => {
         dispatch(setAppLoading(true));
         try {
-            await axios.delete(import.meta.env.VITE_BASE_URL + `/notes/${state.currentNote.id}`);
+            await api.delete(`/notes/${state.currentNote.id}`);
             localDispatch({type: "DELETE_NOTE", payload: state.currentNote});
-        } catch (error) {
-            dispatch(setAppError(error as any));
+        } catch (error: any) {
+            dispatch(setAppError(error.message));
         } finally {
             dispatch(setAppLoading(false));
         }
