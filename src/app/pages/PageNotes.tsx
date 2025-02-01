@@ -3,6 +3,7 @@ import axios from "axios";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
+import Dialog from "../components/Dialog.tsx";
 
 export interface Note {
     id: number;
@@ -115,7 +116,7 @@ const PageNotes: React.FC = () => {
                 title: state.currentNote.title,
                 description: state.currentNote.description,
             });
-            localDispatch({ type: "ADD_NOTE", payload: response.data });
+            localDispatch({type: "ADD_NOTE", payload: response.data});
         } catch (error) {
             dispatch(setAppError(error as any));
         } finally {
@@ -130,7 +131,7 @@ const PageNotes: React.FC = () => {
                 title: state.currentNote.title,
                 description: state.currentNote.description,
             });
-            localDispatch({ type: "EDIT_NOTE", payload: response.data });
+            localDispatch({type: "EDIT_NOTE", payload: response.data});
         } catch (error) {
             dispatch(setAppError(error as any));
         } finally {
@@ -142,7 +143,7 @@ const PageNotes: React.FC = () => {
         dispatch(setAppLoading(true));
         try {
             await axios.delete(import.meta.env.VITE_BASE_URL + `/notes/${state.currentNote.id}`);
-            localDispatch({ type: "DELETE_NOTE", payload: state.currentNote });
+            localDispatch({type: "DELETE_NOTE", payload: state.currentNote});
         } catch (error) {
             dispatch(setAppError(error as any));
         } finally {
@@ -161,9 +162,9 @@ const PageNotes: React.FC = () => {
                     >Create new</h3>
                 </div>
                 {state.notes.length > 0 &&
-                    state.notes.map((note) => (
+                    state.notes.map((note, index) => (
                         <div
-                            key={note.id}
+                            key={index}
                             className="border border-gray-300 shadow-md rounded-lg p-4 bg-white hover:shadow-lg transition-shadow duration-200"
                         >
                             <h3 className="text-lg font-semibold mb-2">{note.title}</h3>
@@ -188,122 +189,78 @@ const PageNotes: React.FC = () => {
             </div>
 
             {state.dialog === "create" && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Create Note</h2>
-                        <p className="text-gray-600 mb-6">
-                            Fill in the details to create a new note.
-                        </p>
-                        <div className="space-y-4">
-                            <input
-                                type="text"
-                                placeholder="Title"
-                                value={state.currentNote.title}
-                                onChange={(e) => localDispatch({
-                                    type: "UPDATE_CURRENT_NOTE",
-                                    payload: {title: e.target.value}
-                                })}
-                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <textarea
-                                placeholder="Description"
-                                value={state.currentNote.description}
-                                onChange={(e) => localDispatch({
-                                    type: "UPDATE_CURRENT_NOTE",
-                                    payload: {description: e.target.value}
-                                })}
-                                rows={4}
-                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            ></textarea>
-                        </div>
-                        <div className="flex justify-end space-x-4 mt-6">
-                            <button
-                                onClick={closeDialog}
-                                className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={createNote}
-                                className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
-                            >
-                                Create
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <Dialog
+                    title={"Create Note"}
+                    message={"Fill in the details to create a new note"}
+                    buttons={[
+                        {text: "Cancel", onClick: closeDialog, color: "gray"},
+                        {text: "Create", onClick: createNote, color: "blue"},
+                    ]}
+                >
+                    <input
+                        type="text"
+                        placeholder="Title"
+                        value={state.currentNote.title}
+                        onChange={(e) => localDispatch({
+                            type: "UPDATE_CURRENT_NOTE",
+                            payload: {title: e.target.value}
+                        })}
+                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <textarea
+                        placeholder="Description"
+                        value={state.currentNote.description}
+                        onChange={(e) => localDispatch({
+                            type: "UPDATE_CURRENT_NOTE",
+                            payload: {description: e.target.value}
+                        })}
+                        rows={4}
+                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    ></textarea>
+                </Dialog>
             )}
 
             {state.dialog === "edit" && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Edit Note</h2>
-                        <p className="text-gray-600 mb-6">
-                            Fill in the details to edit the note.
-                        </p>
-                        <div className="space-y-4">
-                            <input
-                                type="text"
-                                placeholder="Title"
-                                value={state.currentNote.title}
-                                onChange={(e) => localDispatch({
-                                    type: "UPDATE_CURRENT_NOTE",
-                                    payload: {title: e.target.value}
-                                })}
-                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <textarea
-                                placeholder="Description"
-                                value={state.currentNote.description}
-                                onChange={(e) => localDispatch({
-                                    type: "UPDATE_CURRENT_NOTE",
-                                    payload: {description: e.target.value}
-                                })}
-                                rows={4}
-                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            ></textarea>
-                        </div>
-                        <div className="flex justify-end space-x-4 mt-6">
-                            <button
-                                onClick={closeDialog}
-                                className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={editNote}
-                                className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
-                            >
-                                Edit
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <Dialog
+                    title={"Edit Note"}
+                    message={"Fill in the details to edit the note"}
+                    buttons={[
+                        {text: "Cancel", onClick: closeDialog, color: "gray"},
+                        {text: "Edit", onClick: editNote, color: "blue"},
+                    ]}
+                >
+                    <input
+                        type="text"
+                        placeholder="Title"
+                        value={state.currentNote.title}
+                        onChange={(e) => localDispatch({
+                            type: "UPDATE_CURRENT_NOTE",
+                            payload: {title: e.target.value}
+                        })}
+                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <textarea
+                        placeholder="Description"
+                        value={state.currentNote.description}
+                        onChange={(e) => localDispatch({
+                            type: "UPDATE_CURRENT_NOTE",
+                            payload: {description: e.target.value}
+                        })}
+                        rows={4}
+                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    ></textarea>
+                </Dialog>
             )}
 
             {state.dialog === "delete" && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Create Note</h2>
-                        <p className="text-gray-600 mb-6">
-                            Are you sure you want to delete this note?: {state.currentNote.title}
-                        </p>
-                        <div className="flex justify-end space-x-4 mt-6">
-                            <button
-                                onClick={closeDialog}
-                                className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={deleteNote}
-                                className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <Dialog
+                    title={"Delete Note"}
+                    message={`Are you sure you want to delete this note?: ${state.currentNote.title}`}
+                    buttons={[
+                        {text: "Cancel", onClick: closeDialog, color: "gray"},
+                        {text: "Delete", onClick: deleteNote, color: "red"},
+                    ]}
+                ></Dialog>
             )}
         </>
     );
