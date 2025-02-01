@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useReducer} from "react";
 import axios from "axios";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
@@ -10,130 +10,145 @@ export interface Note {
     description: string;
 }
 
+interface State {
+    notes: Note[];
+    dialog: "create" | "edit" | "delete" | null;
+    currentNote: Note;
+}
+
+type Action =
+    | { type: "SET_NOTES", payload: Note[] }
+    | { type: "OPEN_DIALOG", payload: { dialog: "create" | "edit" | "delete", note?: Note } }
+    | { type: "CLOSE_DIALOG" }
+    | { type: "UPDATE_CURRENT_NOTE"; payload: Partial<Note> }
+    | { type: "ADD_NOTE"; payload: Note }
+    | { type: "EDIT_NOTE"; payload: Note }
+    | { type: "DELETE_NOTE"; payload: Note };
+
+const initialState: State = {
+    notes: [],
+    dialog: null,
+    currentNote: {id: 0, title: "", description: ""},
+};
+
+const reducer = (state: State, action: Action): State => {
+    switch (action.type) {
+        case "SET_NOTES":
+            return {
+                ...state,
+                notes: action.payload
+            };
+        case "OPEN_DIALOG":
+            return {
+                ...state,
+                dialog: action.payload.dialog,
+                currentNote: action.payload.note || {id: 0, title: "", description: ""}
+            };
+        case "CLOSE_DIALOG":
+            return {
+                ...state,
+                dialog: null,
+                currentNote: {id: 0, title: "", description: ""}
+            };
+        case "UPDATE_CURRENT_NOTE":
+            return {
+                ...state,
+                currentNote: {...state.currentNote, ...action.payload}
+            };
+        case "ADD_NOTE":
+            return {
+                ...state,
+                notes: [...state.notes, action.payload],
+                dialog: null
+            };
+        case "EDIT_NOTE":
+            return {
+                ...state,
+                notes: state.notes.map(note => (note.id === action.payload.id ? action.payload : note)),
+                dialog: null,
+            };
+        case "DELETE_NOTE":
+            return {
+                ...state,
+                notes: state.notes.filter(note => note.id !== action.payload.id),
+                dialog: null,
+            };
+        default:
+            return state;
+    }
+};
+
 const PageNotes: React.FC = () => {
     const dispatch: AppDispatch = useDispatch();
+    const [state, localDispatch] = useReducer(reducer, initialState);
 
-    const [notes, setNotes] = useState<Note[]>([]);
-
-    const [createNoteDialogIsOpen, setCreateNoteDialogIsOpen] = useState<boolean>(false);
-    const [editNoteDialogIsOpen, setEditNoteDialogIsOpen] = useState<boolean>(false);
-    const [deleteNoteDialogIsOpen, setDeleteNoteDialogIsOpen] = useState<boolean>(false);
-    const [id, setId] = useState<number>(0);
-    const [title, setTitle] = useState<string>("");
-    const [description, setDescription] = useState<string>("");
-
-    const getNotes = () => {
+    const getNotes = async () => {
         dispatch(setAppLoading(true));
-        axios.get(import.meta.env.VITE_BASE_URL + "/users/me").then((response) => {
-            axios.get(import.meta.env.VITE_BASE_URL + "/notes", {
-                params: {owner: response.data.id,},
-            }).then((response) => {
-                setNotes(response.data);
-            }).catch((error) => {
-                dispatch(setAppError(error));
-            }).finally(() => {
-                dispatch(setAppLoading(false));
+        try {
+            const notesResponse = await axios.get(import.meta.env.VITE_BASE_URL + "/notes", {
+                params: {owner: 'me'},
             });
-        }).catch((error) => {
-            dispatch(setAppError(error));
+            localDispatch({type: "SET_NOTES", payload: notesResponse.data});
+        } catch (error) {
+            dispatch(setAppError(error as any));
+        } finally {
             dispatch(setAppLoading(false));
-        });
-    }
-
-    const createNote = () => {
-        dispatch(setAppLoading(true));
-        axios.post(import.meta.env.VITE_BASE_URL + '/notes', {
-            title,
-            description,
-        }).then((response) => {
-            console.log(response);
-            getNotes();
-            setCreateNoteDialogIsOpen(false);
-            setTitle("");
-            setDescription("");
-        }).catch((error) => {
-            dispatch(setAppError(error));
-        }).finally(() => {
-            dispatch(setAppLoading(false));
-        });
-    }
-
-    const editNote = () => {
-        dispatch(setAppLoading(true));
-        axios.put(import.meta.env.VITE_BASE_URL + '/notes/' + id, {
-            title,
-            description,
-        }).then((response) => {
-            console.log(response);
-            getNotes();
-            setEditNoteDialogIsOpen(false);
-            setId(0);
-            setTitle("");
-            setDescription("");
-        }).catch((error) => {
-            dispatch(setAppError(error));
-        }).finally(() => {
-            dispatch(setAppLoading(false));
-        });
-    }
-
-    const deleteNote = () => {
-        dispatch(setAppLoading(true));
-        axios.delete(import.meta.env.VITE_BASE_URL + '/notes/' + id).then((response) => {
-            console.log(response);
-            getNotes();
-            setDeleteNoteDialogIsOpen(false);
-            setId(0);
-            setTitle("");
-            setDescription("");
-        }).catch((error) => {
-            dispatch(setAppError(error));
-        }).finally(() => {
-            dispatch(setAppLoading(false));
-        });
-    }
-
-    const openCreateNoteDialog = () => {
-        setTitle("");
-        setDescription("");
-        setCreateNoteDialogIsOpen(true);
-    }
-
-    const openEditNoteDialog = (noteId: number) => {
-        dispatch(setAppLoading(true));
-        axios.get(import.meta.env.VITE_BASE_URL + '/notes/' + noteId, {
-        }).then((response) => {
-            console.log(response.data);
-            setId(response.data.id);
-            setTitle(response.data.title);
-            setDescription(response.data.description);
-            setEditNoteDialogIsOpen(true);
-        }).catch((error) => {
-            dispatch(setAppError(error));
-        }).finally(() => {
-            dispatch(setAppLoading(false));
-        });
-    }
-
-    const openDeleteNoteDialog = (noteId: number) => {
-        dispatch(setAppLoading(true));
-        axios.get(import.meta.env.VITE_BASE_URL + '/notes/' + noteId, {
-        }).then((response) => {
-            console.log(response.data);
-            setId(response.data.id);
-            setTitle(response.data.title);
-            setDescription(response.data.description);
-            setDeleteNoteDialogIsOpen(true);
-        }).catch((error) => {
-            dispatch(setAppError(error));
-        }).finally(() => {
-            dispatch(setAppLoading(false));
-        });
-    }
+        }
+    };
 
     useEffect(() => {
-        getNotes();
+        getNotes().then();
     }, []);
+
+    const openDialog = (dialog: "create" | "edit" | "delete", note?: Note) => {
+        localDispatch({type: "OPEN_DIALOG", payload: {dialog, note}});
+    };
+
+    const closeDialog = () => {
+        localDispatch({type: "CLOSE_DIALOG"});
+    };
+
+    const createNote = async () => {
+        dispatch(setAppLoading(true));
+        try {
+            const response = await axios.post(import.meta.env.VITE_BASE_URL + "/notes", {
+                title: state.currentNote.title,
+                description: state.currentNote.description,
+            });
+            localDispatch({ type: "ADD_NOTE", payload: response.data });
+        } catch (error) {
+            dispatch(setAppError(error as any));
+        } finally {
+            dispatch(setAppLoading(false));
+        }
+    };
+
+    const editNote = async () => {
+        dispatch(setAppLoading(true));
+        try {
+            const response = await axios.put(import.meta.env.VITE_BASE_URL + `/notes/${state.currentNote.id}`, {
+                title: state.currentNote.title,
+                description: state.currentNote.description,
+            });
+            localDispatch({ type: "EDIT_NOTE", payload: response.data });
+        } catch (error) {
+            dispatch(setAppError(error as any));
+        } finally {
+            dispatch(setAppLoading(false));
+        }
+    };
+
+    const deleteNote = async () => {
+        dispatch(setAppLoading(true));
+        try {
+            await axios.delete(import.meta.env.VITE_BASE_URL + `/notes/${state.currentNote.id}`);
+            localDispatch({ type: "DELETE_NOTE", payload: state.currentNote });
+        } catch (error) {
+            dispatch(setAppError(error as any));
+        } finally {
+            dispatch(setAppLoading(false));
+        }
+    };
 
     return (
         <>
@@ -142,11 +157,11 @@ const PageNotes: React.FC = () => {
                     className="border border-gray-300 shadow-md rounded-lg p-4 bg-white hover:shadow-lg transition-shadow duration-200"
                 >
                     <h3 className="text-lg font-semibold items-center h-full flex justify-center"
-                        onClick={() => openCreateNoteDialog()}
+                        onClick={() => openDialog("create")}
                     >Create new</h3>
                 </div>
-                {notes.length > 0 &&
-                    notes.map((note) => (
+                {state.notes.length > 0 &&
+                    state.notes.map((note) => (
                         <div
                             key={note.id}
                             className="border border-gray-300 shadow-md rounded-lg p-4 bg-white hover:shadow-lg transition-shadow duration-200"
@@ -155,13 +170,13 @@ const PageNotes: React.FC = () => {
                             <p className="text-gray-600 mb-4 whitespace-pre-wrap">{note.description}</p>
                             <div className="flex justify-end space-x-4">
                                 <button
-                                    onClick={() => openEditNoteDialog(note.id)}
+                                    onClick={() => openDialog("edit", note)}
                                     className="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600 transition-colors"
                                 >
                                     Edit
                                 </button>
                                 <button
-                                    onClick={() => openDeleteNoteDialog(note.id)}
+                                    onClick={() => openDialog("delete", note)}
                                     className="bg-red-500 text-white py-1 px-3 rounded-lg hover:bg-red-600 transition-colors"
                                 >
                                     Delete
@@ -172,7 +187,7 @@ const PageNotes: React.FC = () => {
                 }
             </div>
 
-            {createNoteDialogIsOpen && (
+            {state.dialog === "create" && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
                     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
                         <h2 className="text-2xl font-bold text-gray-800 mb-4">Create Note</h2>
@@ -183,27 +198,33 @@ const PageNotes: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder="Title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                value={state.currentNote.title}
+                                onChange={(e) => localDispatch({
+                                    type: "UPDATE_CURRENT_NOTE",
+                                    payload: {title: e.target.value}
+                                })}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <textarea
                                 placeholder="Description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                value={state.currentNote.description}
+                                onChange={(e) => localDispatch({
+                                    type: "UPDATE_CURRENT_NOTE",
+                                    payload: {description: e.target.value}
+                                })}
                                 rows={4}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             ></textarea>
                         </div>
                         <div className="flex justify-end space-x-4 mt-6">
                             <button
-                                onClick={() => setCreateNoteDialogIsOpen(false)}
+                                onClick={closeDialog}
                                 className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={() => createNote()}
+                                onClick={createNote}
                                 className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
                             >
                                 Create
@@ -213,10 +234,10 @@ const PageNotes: React.FC = () => {
                 </div>
             )}
 
-            {editNoteDialogIsOpen && (
+            {state.dialog === "edit" && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
                     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Create Note</h2>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Edit Note</h2>
                         <p className="text-gray-600 mb-6">
                             Fill in the details to edit the note.
                         </p>
@@ -224,27 +245,33 @@ const PageNotes: React.FC = () => {
                             <input
                                 type="text"
                                 placeholder="Title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                value={state.currentNote.title}
+                                onChange={(e) => localDispatch({
+                                    type: "UPDATE_CURRENT_NOTE",
+                                    payload: {title: e.target.value}
+                                })}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <textarea
                                 placeholder="Description"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
+                                value={state.currentNote.description}
+                                onChange={(e) => localDispatch({
+                                    type: "UPDATE_CURRENT_NOTE",
+                                    payload: {description: e.target.value}
+                                })}
                                 rows={4}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             ></textarea>
                         </div>
                         <div className="flex justify-end space-x-4 mt-6">
                             <button
-                                onClick={() => setEditNoteDialogIsOpen(false)}
+                                onClick={closeDialog}
                                 className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={() => editNote()}
+                                onClick={editNote}
                                 className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
                             >
                                 Edit
@@ -254,22 +281,22 @@ const PageNotes: React.FC = () => {
                 </div>
             )}
 
-            {deleteNoteDialogIsOpen && (
+            {state.dialog === "delete" && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
                     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
                         <h2 className="text-2xl font-bold text-gray-800 mb-4">Create Note</h2>
                         <p className="text-gray-600 mb-6">
-                            Are you sure you want to delete this note?
+                            Are you sure you want to delete this note?: {state.currentNote.title}
                         </p>
                         <div className="flex justify-end space-x-4 mt-6">
                             <button
-                                onClick={() => setDeleteNoteDialogIsOpen(false)}
+                                onClick={closeDialog}
                                 className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={() => deleteNote()}
+                                onClick={deleteNote}
                                 className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
                             >
                                 Delete
