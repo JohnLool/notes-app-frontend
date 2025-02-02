@@ -1,4 +1,4 @@
-import React, {useEffect, useReducer} from "react";
+import React, {useCallback, useEffect, useReducer} from "react";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
@@ -83,33 +83,37 @@ const PageNotes: React.FC = () => {
     const dispatch: AppDispatch = useDispatch();
     const [state, localDispatch] = useReducer(reducer, initialState);
 
-    const getNotes = async () => {
+    const getNotes = useCallback(async () => {
         dispatch(setAppLoading(true));
         try {
             const notesResponse = await api.get("/notes", {
                 params: {owner: 'me'},
             });
             localDispatch({type: "SET_NOTES", payload: notesResponse.data});
-        } catch (error) {
-            dispatch(setAppError(error as any));
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                dispatch(setAppError(error.message));
+            } else {
+                dispatch(setAppError("An unknown error occurred"));
+            }
         } finally {
             dispatch(setAppLoading(false));
         }
-    };
+    }, []);
 
     useEffect(() => {
         getNotes().then();
+    }, [getNotes]);
+
+    const openDialog = useCallback((dialog: "create" | "edit" | "delete", note?: Note) => {
+        localDispatch({type: "OPEN_DIALOG", payload: {dialog, note}});
     }, []);
 
-    const openDialog = (dialog: "create" | "edit" | "delete", note?: Note) => {
-        localDispatch({type: "OPEN_DIALOG", payload: {dialog, note}});
-    };
-
-    const closeDialog = () => {
+    const closeDialog = useCallback(() => {
         localDispatch({type: "CLOSE_DIALOG"});
-    };
+    }, []);
 
-    const createNote = async () => {
+    const createNote = useCallback(async () => {
         dispatch(setAppLoading(true));
         try {
             const response = await api.post("/notes", {
@@ -117,14 +121,18 @@ const PageNotes: React.FC = () => {
                 description: state.currentNote.description,
             });
             localDispatch({type: "ADD_NOTE", payload: response.data});
-        } catch (error: any) {
-            dispatch(setAppError(error.message));
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                dispatch(setAppError(error.message));
+            } else {
+                dispatch(setAppError("An unknown error occurred"));
+            }
         } finally {
             dispatch(setAppLoading(false));
         }
-    };
+    }, [state.currentNote, dispatch]);
 
-    const editNote = async () => {
+    const editNote = useCallback(async () => {
         dispatch(setAppLoading(true));
         try {
             const response = await api.put(`/notes/${state.currentNote.id}`, {
@@ -132,24 +140,32 @@ const PageNotes: React.FC = () => {
                 description: state.currentNote.description,
             });
             localDispatch({type: "EDIT_NOTE", payload: response.data});
-        } catch (error: any) {
-            dispatch(setAppError(error.message));
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                dispatch(setAppError(error.message));
+            } else {
+                dispatch(setAppError("An unknown error occurred"));
+            }
         } finally {
             dispatch(setAppLoading(false));
         }
-    };
+    }, [state.currentNote, dispatch]);
 
-    const deleteNote = async () => {
+    const deleteNote = useCallback(async () => {
         dispatch(setAppLoading(true));
         try {
             await api.delete(`/notes/${state.currentNote.id}`);
             localDispatch({type: "DELETE_NOTE", payload: state.currentNote});
-        } catch (error: any) {
-            dispatch(setAppError(error.message));
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                dispatch(setAppError(error.message));
+            } else {
+                dispatch(setAppError("An unknown error occurred"));
+            }
         } finally {
             dispatch(setAppLoading(false));
         }
-    };
+    }, [state.currentNote, dispatch]);
 
     return (
         <>
