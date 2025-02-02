@@ -167,6 +167,29 @@ const PageNotes: React.FC = () => {
         }
     }, [state.currentNote, dispatch]);
 
+    const dialogFields = (<>
+        <input
+            type="text"
+            placeholder="Title"
+            value={state.currentNote.title}
+            onChange={(e) => localDispatch({
+                type: "UPDATE_CURRENT_NOTE",
+                payload: {title: e.target.value}
+            })}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <textarea
+            placeholder="Description"
+            value={state.currentNote.description}
+            onChange={(e) => localDispatch({
+                type: "UPDATE_CURRENT_NOTE",
+                payload: {description: e.target.value}
+            })}
+            rows={4}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        ></textarea>
+    </>);
+
     return (
         <>
             <div className="p-4 gap-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-20">
@@ -213,26 +236,7 @@ const PageNotes: React.FC = () => {
                         {text: "Create", onClick: createNote, color: "blue"},
                     ]}
                 >
-                    <input
-                        type="text"
-                        placeholder="Title"
-                        value={state.currentNote.title}
-                        onChange={(e) => localDispatch({
-                            type: "UPDATE_CURRENT_NOTE",
-                            payload: {title: e.target.value}
-                        })}
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <textarea
-                        placeholder="Description"
-                        value={state.currentNote.description}
-                        onChange={(e) => localDispatch({
-                            type: "UPDATE_CURRENT_NOTE",
-                            payload: {description: e.target.value}
-                        })}
-                        rows={4}
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    ></textarea>
+                    {dialogFields}
                 </Dialog>
             )}
 
@@ -245,26 +249,7 @@ const PageNotes: React.FC = () => {
                         {text: "Edit", onClick: editNote, color: "blue"},
                     ]}
                 >
-                    <input
-                        type="text"
-                        placeholder="Title"
-                        value={state.currentNote.title}
-                        onChange={(e) => localDispatch({
-                            type: "UPDATE_CURRENT_NOTE",
-                            payload: {title: e.target.value}
-                        })}
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <textarea
-                        placeholder="Description"
-                        value={state.currentNote.description}
-                        onChange={(e) => localDispatch({
-                            type: "UPDATE_CURRENT_NOTE",
-                            payload: {description: e.target.value}
-                        })}
-                        rows={4}
-                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    ></textarea>
+                    {dialogFields}
                 </Dialog>
             )}
 
