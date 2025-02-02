@@ -6,6 +6,16 @@ import Cookies from "js-cookie";
 import {setAccountAuthorized} from "../../slices/accountSlice.ts";
 import {api} from "../../utils/api.ts";
 
+const loginUser = async (email: string, password: string) => {
+    return api.post('/auth/token', new URLSearchParams({ username: email, password }), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+};
+
+const registerUser = async (username: string, email: string, password: string) => {
+    return api.post('/users', { username, email, password });
+};
+
 const Login = () => {
     const dispatch: AppDispatch = useDispatch();
 
@@ -24,33 +34,21 @@ const Login = () => {
 
         dispatch(setAppLoading(true));
         try {
-            api.post(
-                '/auth/token',
-                new URLSearchParams({
-                    username: email,
-                    password,
-                }),
-                {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                }
-            ).then((response) => {
-                const token = response.data.access_token;
-                Cookies.set('token', token, {expires: 1});
-                api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                dispatch(setAccountAuthorized(true));
-            }).catch((error) => {
+            const response = await loginUser(email, password);
+            const token = response.data.access_token;
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            dispatch(setAccountAuthorized(true));
+        } catch (error: unknown) {
+            console.error(error);
+            if (error instanceof Error) {
                 dispatch(setAppError(error.message));
-            }).finally(() => {
-                dispatch(setAppLoading(false));
-            });
-        } catch (error: any) {
-            console.error('error:', error);
-            dispatch(setAppError(error.response.data))
+            } else {
+                dispatch(setAppError("An unknown error occurred"));
+            }
             Cookies.remove('token');
             delete api.defaults.headers.common['Authorization'];
             dispatch(setAccountAuthorized(false));
+        } finally {
             dispatch(setAppLoading(false));
         }
     };
@@ -64,24 +62,17 @@ const Login = () => {
 
         dispatch(setAppLoading(true));
         try {
-            api.post('/users', {
-                username,
-                email,
-                password,
-            }).then((response) => {
-                console.log(response)
-                dispatch(setAppMessage('Successfully registered!'));
-            }).catch((error) => {
+            const response = await registerUser(username, email, password);
+            console.log(response);
+            dispatch(setAppMessage('Successfully registered!'));
+        } catch (error: unknown) {
+            console.error(error);
+            if (error instanceof Error) {
                 dispatch(setAppError(error.message));
-            }).finally(() => {
-                dispatch(setAppLoading(false));
-            });
-        } catch (error: any) {
-            console.error('error:', error);
-            dispatch(setAppError(error.response.data))
-            Cookies.remove('token');
-            delete api.defaults.headers.common['Authorization'];
-            dispatch(setAccountAuthorized(false));
+            } else {
+                dispatch(setAppError("An unknown error occurred"));
+            }
+        } finally {
             dispatch(setAppLoading(false));
         }
     };
