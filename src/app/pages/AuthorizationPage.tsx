@@ -36,6 +36,7 @@ const Login = () => {
         try {
             const response = await loginUser(email, password);
             const token = response.data.access_token;
+            Cookies.set('token', token, {expires: 1});
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             dispatch(setAccountAuthorized(true));
         } catch (error: unknown) {
