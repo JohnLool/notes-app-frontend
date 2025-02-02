@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useReducer} from "react";
+import React, {ReactNode, useCallback, useEffect, useReducer} from "react";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
@@ -227,44 +227,67 @@ const PageNotes: React.FC = () => {
                 }
             </div>
 
-            {state.dialog === "create" && (
-                <Dialog
-                    title={"Create Note"}
-                    message={"Fill in the details to create a new note"}
-                    buttons={[
-                        {text: "Cancel", onClick: closeDialog, color: "gray"},
-                        {text: "Create", onClick: createNote, color: "blue"},
-                    ]}
-                >
-                    {dialogFields}
-                </Dialog>
-            )}
-
-            {state.dialog === "edit" && (
-                <Dialog
-                    title={"Edit Note"}
-                    message={"Fill in the details to edit the note"}
-                    buttons={[
-                        {text: "Cancel", onClick: closeDialog, color: "gray"},
-                        {text: "Edit", onClick: editNote, color: "blue"},
-                    ]}
-                >
-                    {dialogFields}
-                </Dialog>
-            )}
-
-            {state.dialog === "delete" && (
-                <Dialog
-                    title={"Delete Note"}
-                    message={`Are you sure you want to delete this note?: ${state.currentNote.title}`}
-                    buttons={[
-                        {text: "Cancel", onClick: closeDialog, color: "gray"},
-                        {text: "Delete", onClick: deleteNote, color: "red"},
-                    ]}
-                ></Dialog>
+            {state.dialog && (
+                <DialogActions
+                    type={state.dialog}
+                    closeDialog={closeDialog}
+                    action={state.dialog === 'create' ? createNote : (state.dialog === 'edit' ? editNote : deleteNote)}
+                    dialogFields={dialogFields}
+                />
             )}
         </>
     );
 };
 
 export default PageNotes;
+
+interface DialogActionsProps {
+    type: 'create' | 'edit' | 'delete'
+    closeDialog: () => void;
+    action: () => void;
+    dialogFields?: ReactNode;
+}
+
+const DialogActions: React.FC<DialogActionsProps> = ({type, closeDialog, action, dialogFields}) => {
+    switch (type) {
+        case "create":
+            return (
+                <Dialog
+                    title={"Create Note"}
+                    message={"Fill in the details to create a new note"}
+                    buttons={[
+                        {text: "Cancel", onClick: closeDialog, color: "gray"},
+                        {text: "Create", onClick: action, color: "blue"},
+                    ]}
+                >
+                    {dialogFields}
+                </Dialog>
+            );
+        case "edit":
+            return (
+                <Dialog
+                    title={"Edit Note"}
+                    message={"Fill in the details to edit the note"}
+                    buttons={[
+                        {text: "Cancel", onClick: closeDialog, color: "gray"},
+                        {text: "Edit", onClick: action, color: "blue"},
+                    ]}
+                >
+                    {dialogFields}
+                </Dialog>
+            );
+        case "delete":
+            return (
+                <Dialog
+                    title={"Delete Note"}
+                    message={'Are you sure you want to delete this note?'}
+                    buttons={[
+                        {text: "Cancel", onClick: closeDialog, color: "gray"},
+                        {text: "Delete", onClick: action, color: "red"},
+                    ]}
+                />
+            );
+        default:
+            return null
+    }
+}
