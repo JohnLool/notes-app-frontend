@@ -2,9 +2,9 @@ import {useState} from "react";
 import {AppDispatch} from "../../utils/store";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading, setAppMessage} from "../../slices/appSlice";
-import axios from "axios";
 import Cookies from "js-cookie";
 import {setAccountAuthorized} from "../../slices/accountSlice.ts";
+import {api} from "../../utils/api.ts";
 
 const Login = () => {
     const dispatch: AppDispatch = useDispatch();
@@ -24,8 +24,8 @@ const Login = () => {
 
         dispatch(setAppLoading(true));
         try {
-            axios.post(
-                import.meta.env.VITE_BASE_URL + '/auth/token',
+            api.post(
+                '/auth/token',
                 new URLSearchParams({
                     username: email,
                     password,
@@ -38,7 +38,7 @@ const Login = () => {
             ).then((response) => {
                 const token = response.data.access_token;
                 Cookies.set('token', token, {expires: 1});
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 dispatch(setAccountAuthorized(true));
             }).catch((error) => {
                 dispatch(setAppError(error.message));
@@ -49,7 +49,7 @@ const Login = () => {
             console.error('error:', error);
             dispatch(setAppError(error.response.data))
             Cookies.remove('token');
-            delete axios.defaults.headers.common['Authorization'];
+            delete api.defaults.headers.common['Authorization'];
             dispatch(setAccountAuthorized(false));
             dispatch(setAppLoading(false));
         }
@@ -64,7 +64,7 @@ const Login = () => {
 
         dispatch(setAppLoading(true));
         try {
-            axios.post(import.meta.env.VITE_BASE_URL + '/users', {
+            api.post('/users', {
                 username,
                 email,
                 password,
@@ -80,7 +80,7 @@ const Login = () => {
             console.error('error:', error);
             dispatch(setAppError(error.response.data))
             Cookies.remove('token');
-            delete axios.defaults.headers.common['Authorization'];
+            delete api.defaults.headers.common['Authorization'];
             dispatch(setAccountAuthorized(false));
             dispatch(setAppLoading(false));
         }
